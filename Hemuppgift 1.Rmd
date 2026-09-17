@@ -1,0 +1,37 @@
+---
+title: "Hemuppgift 1"
+author: "Josefine Sandell och Mikael Trulsson"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(TSA)
+library(tidyverse)
+```
+
+# Introduktion
+
+
+```{r intro}
+
+```
+
+# Trendanalys
+
+
+```{r trendanalys}
+
+data(wages)
+```
+
+
+# Simulering av ARMA(p,q)-processer
+
+
+# Trendanalys med hjälp av tidsdifferensbildning
+
+
+# AI statement
+
