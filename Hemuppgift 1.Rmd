@@ -2,7 +2,9 @@
 title: "Hemuppgift 1"
 author: "Josefine Sandell och Mikael Trulsson"
 date: "`r Sys.Date()`"
-output: pdf_document
+output:
+  word_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -16,18 +18,182 @@ library(tidyverse)
 
 ```{r intro}
 
+data(co2)
+data(lynx)
+data(flow)
+data(wages)
+
+
+ # undersöker datamaterialet 
+
+bokstaver <- substr(month.abb, 1, 1)
+
+plot(co2)
+points(y = co2, x = time(co2),
+       pch = bokstaver[cycle(co2)], cex = 0.7, col = "darkseagreen4")
+
+
+
 ```
+
+börja med c02
+plot data, undersöka hur datan ser ut
+
+Vi ser direkt en positiv linjär trend, men anar också en säsongsmässig trend. Därför märker vi ut månadarna i plotten.
+
+Nästa steg är att bygga modellen.
+
+```{r}
+
+# nästa steg, testa linjär modell
+
+modell_co2 <- lm(co2 ~ time(co2))
+
+summary(modell_co2)
+
+plot(modell_co2)
+
+
+
+```
+Residualanalysen tyder på att normalitet/linjäritetsantagandet inte uppfylls. Därför vill vi kombinera den linjära trendmodellen med en till modell. Vi väljer att testa en säsongsmodell på grund av
+
+
+```{r}
+
+manad <- cycle(co2)
+
+modell2 <- lm(co2 ~ manad -1) # -1 removes the intercept term
+summary(modell2)
+
+plot(modell2)
+
+```
+
+
+Vi dsfjkdfsjklfds *utveckla*
+
+```{r}
+
+manad <- cycle(co2)
+
+cycle(co2)
+
+modell3 <- lm(co2 ~ time(co2) + (manad - 1))
+
+summary(modell3)
+
+plot(modell3)
+
+
+```
+Kombinationen av en linjär trendmodell plus en cyklisk modell ger oss en starkare modell med en hög förklaringsgrad. 
+
+* tolka residualerna *
+
+
+
 
 # Trendanalys
 
 
-```{r trendanalys}
+```{r wages}
 
-data(wages)
+
+
+plot(wages)
+
+
+
+plot(wages)
+points(y = wages, x = time(wages), pch = bokstaver[cycle(wages)], cex = 0.7)
+
+
+
+
 ```
 
+Vid första anblick verkar trenden vara positivt linjär, där lönen går upp i tiden. Punkterna tyder dock på att timlönerna avtagar under sommaren och ökar efter semestern. Därför tycker vi att det kan finnas en cyklisk/säsongsmässig komponent till trenden tillsammans med den linjära trenden.
+
+```{r}
+
+modell_wages_1 <- lm(wages ~time(wages))
+summary(modell_wages_1)
+plot(modell_wages_1)
+
+```
+Modellen har hög förklaringsgrad, men residualplottarna tyder på flera problem. Resaidual vs fitted plotten visar en kurva bland residualerna, vilket kan tyda på icke-linjäritet samt heteroskedasticitet. Scale-location visar också att homoskedasticitet-antagandet ej uppfylls.
+
+Därför vill vi testa anpassa en ny modell som tar hänsyn till eventuella säsongstrender.
+
+```{r}
+
+manad_wage <- cycle(wages)
+
+modell_wage_2 <- lm(wages ~ manad_wage -1)
+
+summary(modell_wage_2)
+
+plot(modell_wage_2)
+
+
+
+```
+
+Säsongstrendsmodellen ser inte heller perfekt ut. Den fångar att det finns en månadseffekt på lönerna, men den fångar inte hur lönerna ökar med tiden. Vi testar att kombinera båda trenderna i en ny modell.
+
+
+```{r}
+
+modell_wages_3 <- lm(wages ~ time(wages) + manad_wage -1)
+summary(modell_wages_3)
+plot(modell_wages_3)
+
+# bygga residualplot enligt sida 44
+
+plot(y=rstudent(modell_wages_3), x=as.vector(fitted(modell_wages_3)),
+     xlab = "Fitted Trend Values",
+     ylab = "Standardized Residuals", type ="n")
+points(y=rstudent(modell_wages_3), x=as.vector(fitted(modell_wages_3)),
+       pch=bokstaver[cycle(wages)], cex = 0.7, col = "darkseagreen4")
+
+```
+
+I figuren ovan framgår den kombinerade säsongs- och linjär trendmodell. Denna modell har högsta förklaringsgrad av alla tre och dess residualplottar uppfyller linjäritetsantagandet samt homoskedasticitetsantagandet. Vi har även inkluderat en extra residuals vs fitted plot där även månaderna framgår. Denna visar tydligt att det finns ett säsongsmönster som tas i beaktning vid modellbygget.
 
 # Simulering av ARMA(p,q)-processer
+
+```{r}
+
+set.seed(900)
+
+phi_pos <- 0.6
+phi_neg <- -0.6
+
+y_pos <- arima.sim(model=list(ar=phi_pos), n = 300)
+y_neg <- arima.sim(model=list(ar=phi_neg), n = 300)
+
+acf(y_pos) #skattning av acf 
+acf(y_neg)
+
+pacf(y_pos) # skattning av pcf
+pacf(y_neg)
+
+# ccf(y_pos, y_neg) korskovariansfunktionen
+
+teoretisk_acf_pos <- ARMAacf(ar = y_pos) #teoretisk acf
+
+plot(teoretisk_acf_pos, type="h", xlab="Lag", ylab="ACF", 
+     main="Teoretisk ACF för AR(1) med phi=0.6", ylim=c(-3,4))
+
+teoretisk_acf_neg <- ARMAacf(ar = y_pos) #teoretisk pacf
+
+plot(teoretisk_acf_neg, type="h", xlab="Lag", ylab="ACF", 
+     main="Teoretisk ACF för AR(1) med phi=-0.6", ylim=c(-1,1))
+
+
+```
+
 
 
 # Trendanalys med hjälp av tidsdifferensbildning
@@ -35,3 +201,21 @@ data(wages)
 
 # AI statement
 
+
+
+*RADERA SENARE*
+```{r}
+
+# FEL. COSINE TREND
+
+har <- harmonic(co2, 1)
+modell_co2_2 <- lm(co2~har)
+summary(modell_co2_2)
+plot(modell_co2_2)
+plot(ts(fitted(modell_co2_2), freq = 12),
+     ylab = "Co2", type = "l",
+     ylim = range(c(fitted(modell_co2_2), co2))) ; points(co2)
+
+# hur ska vi tolka det här för att sedan motivera kombinationen av modellerna
+
+```
