@@ -3,8 +3,8 @@ title: "Hemuppgift 1"
 author: "Josefine Sandell och Mikael Trulsson"
 date: "`r Sys.Date()`"
 output:
-  word_document: default
   pdf_document: default
+  word_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -163,59 +163,202 @@ I figuren ovan framgår den kombinerade säsongs- och linjär trendmodell. Denna
 
 # Simulering av ARMA(p,q)-processer
 
+## AR(1) - MA(1) processer
+
 ```{r}
 
 set.seed(900)
 
-phi_pos <- 0.6
-phi_neg <- -0.6
+# ar(1) process
+
+phi_pos <- c(0.6)
+phi_neg <- -c(0.6)
 
 y_pos <- arima.sim(model=list(ar=phi_pos), n = 300)
+plot(y_pos, type="h", xlab="Tid", ylab="Y", 
+     main="Realiseringar för phi = 0.6")
 y_neg <- arima.sim(model=list(ar=phi_neg), n = 300)
+plot(y_neg, type="h", xlab="Tid", ylab="Y", 
+     main="Realiseringar för phi = -0.6")
 
-acf(y_pos) #skattning av acf 
-acf(y_neg)
+plot(acf(y_pos, plot = FALSE), xlab = "Lag", ylab = "Skattade ACF", main = "Skattade ACF för AR(1) med phi = 0.6") #skattning av acf 
+plot(acf(y_neg, plot = FALSE), xlab = "Lag", ylab = "Skattade ACF", main = "Skattade ACF för AR(1) med phi = -0.6")
 
-pacf(y_pos) # skattning av pcf
-pacf(y_neg)
 
-# ccf(y_pos, y_neg) korskovariansfunktionen
-
-teoretisk_acf_pos <- ARMAacf(ar = y_pos) #teoretisk acf
+teoretisk_acf_pos <- ARMAacf(ar = phi_pos, lag.max=22) #teoretisk acf
 
 plot(teoretisk_acf_pos, type="h", xlab="Lag", ylab="ACF", 
-     main="Teoretisk ACF för AR(1) med phi=0.6", ylim=c(-3,4))
+     main="Teoretisk ACF för AR(1) med phi=0.6")
 
-teoretisk_acf_neg <- ARMAacf(ar = y_pos) #teoretisk pacf
+teoretisk_acf_neg <- ARMAacf(ar = phi_neg, lag.max = 22) #teoretisk pacf
 
 plot(teoretisk_acf_neg, type="h", xlab="Lag", ylab="ACF", 
-     main="Teoretisk ACF för AR(1) med phi=-0.6", ylim=c(-1,1))
+     main="Teoretisk ACF för AR(1) med phi=-0.6")
+
+
+
+
+```
+Vi kan inte tyda några skillnader mellan de olika koefficienternas phi = 0.6 och phi = -0.6 inverkan på realiseringarna.
+
+Den skattade autokorrelationsfunktionen (ACF) avtagar snabbare i vår simulation än den teoretiska ACF:en. Detta gäller både det positiva (psi = 0.6) och det negativa (phi = -0.6) fallen. Det första tre laggen följer den teoretiska mönstret hyfsat väl om än snabbare, sedan avtar den.
+
+När phi = -0.6 så byter laggen tecken i både den teoretiska och den skattade autokorrelationsfunktionen. Detta beror på att den multiplicerar med en negativ koefficient. 
+
+
+
+```{r}
+# motsvarande analys MA-process
+
+set.seed(901)
+
+
+theta_pos <- c(0.6)
+theta_neg <- -c(0.6)
+
+
+y_pos_ma <- arima.sim(model=list(ma=theta_pos), n = 300)
+plot(y_pos_ma, type="h", xlab="Tid", ylab="Y", 
+     main="Realiseringar för theta = 0.6")
+y_neg_ma <- arima.sim(model=list(ma=theta_neg), n = 300)
+plot(y_neg_ma, type="h", xlab="Tid", ylab="Y", 
+     main="Realiseringar för theta = -0.6")
+
+plot(acf(y_pos_ma, plot = FALSE), xlab = "Lag", ylab = "Skattade ACF", main = "Skattade ACF för MA(1) med theta = 0.6") #skattning av acf 
+plot(acf(y_neg_ma, plot = FALSE), xlab = "Lag", ylab = "Skattade ACF", main = "Skattade ACF för MA(1) med theta = -0.6")
+
+
+teoretisk_acf_ma_pos <- ARMAacf(ma = theta_pos, lag.max = 22) #teoretisk acf
+
+plot(teoretisk_acf_ma_pos, type="h", xlab="Lag", ylab="ACF", 
+     main="Teoretisk ACF för MA(1) med theta =0.6")
+
+teoretisk_acf_ma_neg <- ARMAacf(ma = theta_neg, lag.max = 22) #teoretisk pacf
+
+plot(teoretisk_acf_ma_neg, type="h", xlab="Lag", ylab="ACF", 
+     main="Teoretisk ACF för MA(1) med theta =-0.6")
+
+```
+
+Vi kan inte tyda några skillnader mellan de olika koefficienteras theta = 0.6 och theta = -0.6 inverkan på realisingarna.
+
+Vår simulering visar en likhet med den teoretiska ACF för en MA(1) process. I teorin sjunker korrelationen skarpt vid lag 2 och förblir vid 0 vid större lag. Vår skattade ACF beter sig liknande men fluktuerar kring 0 efter andra lagget. 
+
+Den skattade ACF med theta = -0.6 beter sig liknande, men är spegelvänd till början. 
+
+
+## AR(2)
+
+```{r ar2}
+
+set.seed(902)
+
+ # två reella rötter, 0.873, −0.573
+phi_a <- c(0.3, 0.5)
+
+y_phi_a <- arima.sim(model=list(ar=phi_a), n = 300)
+plot(y_phi_a, type="h", xlab="Tid", ylab="Y", 
+     main="Realiseringar för phi = [0.3, 0.5]")
+
+plot(acf(y_phi_a, plot = FALSE), xlab = "Lag", ylab = "Skattade ACF", main = "Skattade ACF för AR(2) med phi = [0.3, 0.5]")
+
+
+phi_b <- c(-1, -0.8)  #två komplexa rötter, 0.894 och 2.165
+
+y_phi_b <- arima.sim(model=list(ar=phi_b), n = 300)
+plot(y_phi_b, type="h", xlab="Tid", ylab="Y", 
+     main="Realiseringar för phi = [-1, -0.8]")
+
+plot(acf(y_phi_b, plot = FALSE), xlab = "Lag", ylab = "Skattade ACF", main = "Skattade ACF för AR(2) med phi = [-1, -0.8]")
+
+phi_c <- c(1.5, -0.9) # två komplexa rötter, 0.949 och 0.658.
+y_phi_c <- arima.sim(model=list(ar=phi_c), n = 300)
+plot(y_phi_c, type="h", xlab="Tid", ylab="Y", 
+     main="Realiseringar för phi = [1.5, -0.9]")
+
+plot(acf(y_phi_c, plot = FALSE), xlab = "Lag", ylab = "Skattade ACF", main = "Skattade ACF för AR(2) med phi = [1.5, -0.9]")
+
+phi_d <- c(1.2, -0.3) # två reela, 0.845 och 0.355.
+y_phi_d <- arima.sim(model=list(ar=phi_d), n = 300)
+plot(y_phi_d, type="h", xlab="Tid", ylab="Y", 
+     main="Realiseringar för phi = [1.2, -0.3]")
+
+plot(acf(y_phi_d, plot = FALSE), xlab = "Lag", ylab = "Skattade ACF", main = "Skattade ACF för AR(2) med phi = [1.2, -0.3]")
+
 
 
 ```
 
+Skillnaderna mellan realiseringarna visas tydligast i hur ofta processen byter tecken, och skillnaderna mellan korrelationsfunktionerna i hur snabbt de avtar samt om de byter tecken regelbundet eller inte.
+
+För det första koefficientparet, phi = (0.3, 0.5), är rötterna reella, 0.873 respektive −0.573. Korrelationsfunktionen avtar ungefär monotont, på ett sätt som påminner om en AR(1)-process. Realiseringen ligger kvar på samma sida om medelvärdet under flera tidpunkter i följd, alltså de byter inte tecken ofta.
+
+Det andra paret, phi = (−1, −0.8), ger komplexa rötter, med 0.894 och 2.165. Korrelationsfunktionen har ett nästan alternerande mönster där den byter tecken efter nästan varje tidspunkt. Den avtar långsammare än första processen.
+
+Det tredje paret, phi = (1.5, −0.9), ger också komplexa rötter, men med 0.949 och 0.658. [skriv mer] 
+
+Det fjärde paret, phi = (1.2, −0.3), har två positiva reella rötter, 0.845 och 0.355. Vår skattad korrelationsfunktion är för det mesta positivt och avtar monotont.
+
+Sammantaget visar resultaten att det avgörande för grundstrukturen är rötternas typ. 
+
+## ARMA(p,q)
+
+```{r arma}
+
+set.seed(800)
+
+# arma (1,1) process
+
+theta_arma_1_1 <- c(0.8)
+
+phi_arma_1_1 <- c(0.8)
+
+y_arma_1_1 <- arima.sim(model=list(ar = phi_arma_1_1, ma = theta_arma_1_1), n = 300)
+plot(y_arma_1_1, type="h", xlab="Tid", ylab="Y", 
+     main="Realiseringar för ARMA(1,1) med phi = 0.8 och theta = 0.8")
+
+plot(acf(y_arma_1_1, plot = FALSE), xlab = "Lag", ylab = "Skattade ACF", main = "Skattade ACF för ARMA(1,1) med phi = 0.8 och theta = 0.8")
+
+# arma (2,1) process
+
+theta_arma_2_1 <- c(0.8)
+phi_arma_2_1 <- c(1.2, -0.3) # två reella, 0.845 och 0.355.
+
+y_arma_2_1 <- arima.sim(model=list(ar = phi_arma_2_1, ma = theta_arma_2_1), n = 300)
+plot(y_arma_2_1, type="h", xlab="Tid", ylab="Y", 
+     main="Realiseringar för ARMA(2,1) med phi = 1.2, -0.3  och theta = 0.8")
+
+plot(acf(y_arma_2_1, plot = FALSE), xlab = "Lag", ylab = "Skattade ACF", main = "Skattade ACF för ARMA(2,1) phi = 1.2, -0.3  och theta = 0.8")
+
+theta_arma_2_1_b <- -c(0.5)
+
+phi_arma_2_1_b <- c(-1, -0.8)  # komplexa rötter, 0.894 och 2.165
+
+y_arma_2_1_b <- arima.sim(model=list(ar = phi_arma_2_1_b, ma = theta_arma_2_1_b), n = 300)
+plot(y_arma_2_1_b, type="h", xlab="Tid", ylab="Y", 
+     main="Realiseringar för ARMA(2,1) med phi = -1, -0.8 och theta = -0.5")
+
+plot(acf(y_arma_2_1_b, plot = FALSE), xlab = "Lag", ylab = "Skattade ACF", main = "Skattade ACF för ARMA(2,1) phi = -1, -0.8  och theta = -0.5")
+
+
+```
+
+Vi utförde tre olika simuleringar av ARMA(p,q) procecesser; en ARMA(1,1) process, en ARMA(2,1) process med reella, positiva rötter och en ARMA(2,1) process med komplexa rötter.
+
+Första processen (ARMA(1,1) med phi = 0.8 och theta = 0.8) har en avtagande och strikt positivt ACF. Detta liknar vår fjärde AR(2) process där rötterna var reella och positiva. Både phi och theta är positiva i denna ARMA(1,1) process vilket kan förklara likheterna mellan processerna.
+
+Andra processen (ARMA(2,1) med phi = 1.2, -0.3 och theta = 0.8 ) har två reella och positiva rötter samt en positiv theta-värde. Processen liknar den föregående processen och är strikt positiv samt monotont avtagande.
+
+Tredje processen, som är ARMA(2,1) med phi = -1, -0.8 och theta = -0.5, har en negativ theta och phi med komplexa rötter där den andra roten är mycket större än den första. Här ser realiseringar annorlunda ut jämfört med de första två processerna; de har alternerande tecken precis som våra tidigare AR(2) processer med komplexa rötter. ACF:en alternerar i tecken också och är inte längre monotont avtagande.
+
+*(sammanfatta skillnaderna?)* Dessa tre processer ger inte tillräckligt med information för oss att dra några tydliga slutsatser, men vi kan påstå att rötterna från AR-delen av en ARMA(p,q) process är fortfarande väsentliga när det gäller att avgöra en grundstruktur av en process.
 
 
 # Trendanalys med hjälp av tidsdifferensbildning
 
 
+
+
 # AI statement
 
 
-
-*RADERA SENARE*
-```{r}
-
-# FEL. COSINE TREND
-
-har <- harmonic(co2, 1)
-modell_co2_2 <- lm(co2~har)
-summary(modell_co2_2)
-plot(modell_co2_2)
-plot(ts(fitted(modell_co2_2), freq = 12),
-     ylab = "Co2", type = "l",
-     ylim = range(c(fitted(modell_co2_2), co2))) ; points(co2)
-
-# hur ska vi tolka det här för att sedan motivera kombinationen av modellerna
-
-```
