@@ -1,3 +1,7 @@
+Med avtrendifieringen/differensbildningen så har en konstant väntevärdesfunktion uppnåtts. Det är ett av kriterierna för en svag stationär process. Kovariansen uppvisar fortfarande ett beroende av tidspunkten, och därför är processen inte stationär, än. Vi testar ytterligare en differensbildning:
+
+
+
 ---
 title: "Hemuppgift 1"
 author: "Josefine Sandell och Mikael Trulsson"
