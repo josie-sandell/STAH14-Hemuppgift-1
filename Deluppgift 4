@@ -1,0 +1,38 @@
+# 4 Trendanalys med hjälp av tidsdifferensbildning
+
+```{r}
+
+W_t = diff(co2, lag = 1, differences = 1)
+plot(W_t)
+plot(co2)
+
+```
+
+Med avtrendifieringen/differensbildningen så har en konstant väntevärdesfunktion uppnåtts. Det är ett av kriterierna för en svag stationär process. Kovariansen uppvisar fortfarande ett beroende av tidspunkten, och därför är processen inte stationär, än. Vi testar ytterligare en differensbildning:
+
+```{r}
+W2_t = diff(W_t, 1, 1)
+plot(W2_t)
+
+W2b_t = diff(W_t, lag=12, 1) # Vi testar differensbildning med periodiska/cykliska komponenten
+plot(W2b_t)
+```
+Efter andra differensbildningen ser vi ingen tydligare stationäritet. Den första differensbildningen gav oss en tidsserie utan deterministisk trend och med bättre stationäritetsegenskaper.
+
+Vi provar nu också att göra om den andra differensbildningen, men med hänsyn till det periodiska mönstret. Detta resulterar i en tidsserie där vi inte kan utläsa någon periodicitet och som uppvisar bäst stationäritetsegenskaper av alla differensbildningar.
+
+```{r}
+W_t_wages = diff(wages, 1, 1)
+plot(wages)
+plot(W_t_wages)
+
+W2_t_wages = diff(W_t_wages)
+plot(W2_t_wages)
+
+W2b_t_wages = diff(W_t_wages, lag = 12, 1)
+plot(W2b_t_wages)
+
+```
+Av plottarna framgår att trendkomponenten försvann i den första differensbildningen, vilket gav oss en tidsserie med bättre stationäritetsegenskaper. Det verkar, rent visuellt, som att en ytterligare differensbildning avtrendifierar tidsserien ytterligare. Det går nästan att urskönja en svagt negativ trend i första differensbildningen, särskilt i jämförelse med den andra differensbildningen, som i så fall får anses ha bäst stationäritetsegenskaper.
+
+# AI statement
