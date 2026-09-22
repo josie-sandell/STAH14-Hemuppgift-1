@@ -1,0 +1,211 @@
+---
+title: "Hemuppgift 1"
+author: "Josefine Sandell och Mikael Trulsson"
+date: "`r Sys.Date()`"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(TSA)
+library(tidyverse)
+```
+
+# Introduktion
+
+```{r intro}
+
+```
+
+# Trendanalys
+
+```{r trendanalys}
+data(co2)
+plot(co2)
+# Skriv något om 
+```
+Vi läser in Co2-datasetet och plottar det. Vi ser direkt en linjär postitiv trend, men anar också ett säsongsmässigt mönster i topparna och dalarna i datan. Därför märker vi också ut månaderna i plotten.
+```{r}
+Model1 = lm(co2~time(co2), data=CO2)
+summary(Model1)
+plot(Model1)
+
+```
+Vi skapar en enkel linjär modell som tar koldioxidupptag som beroende variabel och tid som förklarande variabel. Normalitetsantagandet är inte uppfyllt. Vi provar att införa en kombinerad linjär- och säsongsmodell nedan.
+```{r}
+månad. <- cycle(co2)              # skapar en kategorisk variabel: vilken månad varje observation hör till
+model2 <- lm(co2 ~ time(co2) + månad. - 1)
+summary(model2)
+plot(model2)
+```
+Kombinationen av linjära och cykliska komponenter verkar ha givit oss en bättre modell, av förklaringsgraden och residualplottarna att döma.
+
+```{r}
+data(wages)
+bokstaver = substr(month.abb, 1, 1)
+plot(wages)
+points(y=wages, x=time(wages), pch= bokstaver[cycle(wages)], cex=0.7, col="seagreen4")
+
+```
+Vid första anblick skönjs en positiv linjär trend i lönerna. Vi lägger också på månaderna i grafen och ser att timlönerna tycks sjunka under nästan varje augustimånad. Vi inför en enkel linjär modell.
+
+```{r}
+modell_wages_1=lm(wages~time(wages))
+plot(modell_wages_1)
+```
+Modellen har hög förklaringsgrad, men residualplottarna tyder på flera problem. Residuals vs fitted-plotten visar en kurva för residualerna, vilket kan tyda på ickelinjäritet samt heteroskedasticitet. Därför provar vi att anpassa en ny modell som tar hänsyn till eventuella säsongsmönster.
+
+```{r}
+månad_wage = cycle(wages)
+
+modell_wages_2=lm(wages~månad_wage -1)
+
+plot(modell_wages_2)
+
+
+
+```
+En renodlad månads-modell för timlönerna ser inte heller perfekt ut. Vi testar att kombinera båda trenderna i en ytterligare modell.
+
+```{r}
+modell_wages_3 = lm(wages~time(wages) + månad_wage -1)
+summary(modell_wages_3)
+plot(modell_wages_3)
+
+plot(y=rstudent(modell_wages_3), x=as.vector(fitted(modell_wages_3)), xlab='Fitted Trend Values',
+     ylab='Standardized Residuals', type='n')
+points(y=rstudent(modell_wages_3), x=as.vector(fitted(modell_wages_3)), 
+       pch=bokstaver[cycle(wages)], cex=0.7, col='darkseagreen4')
+
+
+```
+I figuren ovan framgår den nya kombinerade säsong- och trendmodellen. Denna modellen uppvisar högst förklaringsgrad och dess residualplottar uppfyller lineraritetsantagandet och visar homoskedacitet i variansen. Vi inkluderar också en extra residuals vs fitted-plot  där även månaderna framgår. Denna visar tydligt att det finns ett säsongsmönster att ta i beaktning vid modellbygget.
+
+
+# Simulering av ARMA(p,q)-processer
+
+Vi kan inte tyda några skillnader mellan de olika koefficienternas phi = 0.6 och phi = -0.6 inverkan på realiseringarna.
+
+Den skattade autokorrelationsfunktionen (ACF) avtagar snabbare i vår simulation än den teoretiska ACF:en. Detta gäller både det positiva (psi = 0.6) och det negativa (phi = -0.6) fallen. Det första tre laggen följer den teoretiska mönstret hyfsat väl om än snabbare, sedan avtar den.
+
+När phi = -0.6 så byter laggen tecken i både den teoretiska och den skattade autokorrelationsfunktionen. Detta beror på att den multiplicerar med en negativ koefficient. 
+
+set.seed(900)
+```{r}
+set.seed(900)
+
+# ar(1) process
+
+phi_pos <- c(0.6)
+phi_neg <- -c(0.6)
+
+y_pos <- arima.sim(model=list(ar=phi_pos), n = 300)
+plot(y_pos, type="h", xlab="Tid", ylab="Y", 
+     main="Realiseringar för phi = 0.6")
+y_neg <- arima.sim(model=list(ar=phi_neg), n = 300)
+plot(y_neg, type="h", xlab="Tid", ylab="Y", 
+     main="Realiseringar för phi = -0.6")
+
+plot(acf(y_pos, plot = FALSE), xlab = "Lag", ylab = "Skattade ACF", main = "Skattade ACF för AR(1) med phi = 0.6") #skattning av acf 
+plot(acf(y_neg, plot = FALSE), xlab = "Lag", ylab = "Skattade ACF", main = "Skattade ACF för AR(1) med phi = -0.6")
+
+
+teoretisk_acf_pos <- ARMAacf(ar = phi_pos, lag.max=22) #teoretisk acf
+
+plot(teoretisk_acf_pos, type="h", xlab="Lag", ylab="ACF", 
+     main="Teoretisk ACF för AR(1) med phi=0.6")
+
+teoretisk_acf_neg <- ARMAacf(ar = phi_neg, lag.max = 22) #teoretisk pacf
+
+plot(teoretisk_acf_neg, type="h", xlab="Lag", ylab="ACF", 
+     main="Teoretisk ACF för AR(1) med phi=-0.6")
+
+```
+
+
+
+
+```{r}
+# motsvarande analys MA-process
+
+set.seed(901)
+
+
+theta_pos <- c(0.6)
+theta_neg <- -c(0.6)
+
+
+y_pos_ma <- arima.sim(model=list(ma=theta_pos), n = 300)
+plot(y_pos_ma, type="h", xlab="Tid", ylab="Y", 
+     main="Realiseringar för theta = 0.6")
+y_neg_ma <- arima.sim(model=list(ma=theta_neg), n = 300)
+plot(y_neg_ma, type="h", xlab="Tid", ylab="Y", 
+     main="Realiseringar för theta = -0.6")
+
+plot(acf(y_pos_ma, plot = FALSE), xlab = "Lag", ylab = "Skattade ACF", main = "Skattade ACF för MA(1) med theta = 0.6") #skattning av acf 
+plot(acf(y_neg_ma, plot = FALSE), xlab = "Lag", ylab = "Skattade ACF", main = "Skattade ACF för MA(1) med theta = -0.6")
+
+
+teoretisk_acf_ma_pos <- ARMAacf(ma = theta_pos, lag.max = 22) #teoretisk acf
+
+plot(teoretisk_acf_ma_pos, type="h", xlab="Lag", ylab="ACF", 
+     main="Teoretisk ACF för MA(1) med theta =0.6")
+
+teoretisk_acf_ma_neg <- ARMAacf(ma = theta_neg, lag.max = 22) #teoretisk pacf
+
+plot(teoretisk_acf_ma_neg, type="h", xlab="Lag", ylab="ACF", 
+     main="Teoretisk ACF för MA(1) med theta =-0.6")
+
+```
+
+Vi kan inte tyda några skillnader mellan de olika koefficienteras theta = 0.6 och theta = -0.6 inverkan på realisingarna.
+
+Vår simulering visar en likhet med den teoretiska ACF för en MA(1) process. I teorin sjunker korrelationen skarpt vid lag 2 och förblir vid 0 vid större lag. Vår skattade ACF beter sig liknande men fluktuerar kring 0 efter andra lagget. 
+
+Den skattade ACF med theta = -0.6 beter sig liknande, men är spegelvänd till början. 
+```
+
+AR(2)-process
+```{r}
+
+# ar(2) process
+set.seed(902)
+
+phi_1a <- -c(0.2)  # 2 reella
+phi_2a <- c(0.5)
+
+phi_1 = c(-0.2, 0.5)
+
+phi_1b <- -c(1)  # 2 komplexa
+phi_2b <- -c(0.8)
+
+phi_2 = c(-1, -0.8)
+
+y_phi_1 <- arima.sim(model=list(ar=phi_1), n = 300)
+plot(y_phi_1, type="h", xlab="Tid", ylab="Y", 
+     main="Realiseringar för phi_1=-0.2, phi_2=0.5")
+
+y_phi_2 <- arima.sim(model=list(ar=phi_2), n = 300)
+plot(y_phi_1, type="h", xlab="Tid", ylab="Y", 
+     main="Realiseringar för phi_1=-1, phi_2=-0.8")
+```
+
+# 3.4 ARMA(p,q)
+```{r}
+
+```
+
+
+# Trendanalys med hjälp av tidsdifferensbildning
+
+```{r}
+
+W_t = diff(co2, lag = 1, differences = 1)
+plot(W_t)
+plot(co2)
+```
+
+
+# AI statement
