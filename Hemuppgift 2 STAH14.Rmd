@@ -150,3 +150,22 @@ data.frame("Längd" = n, "MK-Skattning" = c(MK_MA_100$coef[1], MK_MA_200$coef[1]
 
 ```
 
+
+MK_ARMA_100 <- arima(ARMA_100, order = c(0,0,0), method = "CSS")
+
+ML_ARMA_100 <- arima(ARMA_100, order = c(0,0,0), method = "ML")
+
+MK_ARMA_200 <- arima(ARMA_200, order = c(0,0,0), method = "CSS")
+
+ML_ARMA_200 <- arima(ARMA_200, order = c(0,0,0), method = "ML")
+
+MK_ARMA_1000 <- arima(ARMA_1000, order = c(0,0,0), method = "CSS")
+
+ML_ARMA_1000 <- arima(ARMA_1000, order = c(0,0,0), method = "ML")
+
+data.frame("Längd" = n, "MK-Skattning phi" = c(MK_ARMA_100$coef[1], MK_ARMA_200$coef[1], MK_ARMA_1000$coef[1]), "ML-Skattning phi" = c(ML_ARMA_100$coef[1], ML_ARMA_200$coef[1], ML_ARMA_1000$coef[1]), "MK-Skattning theta" = c(MK_ARMA_100$coef[2], MK_ARMA_200$coef[2], MK_ARMA_1000$coef[2]), "ML-Skattning theta" = c(ML_ARMA_100$coef[2], ML_ARMA_200$coef[2], ML_ARMA_1000$coef[2]),)
+
+MK_ARMA_100
+
+MK_ARMA_100$coef[1]
+
