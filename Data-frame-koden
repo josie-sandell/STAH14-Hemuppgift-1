@@ -1,0 +1,29 @@
+data.frame(
+  "Längd" = n,
+  "Modell" = c("ARMA(0,2)", "ARMA(0,2)", "ARMA(1,1)"),
+  "MK-Skattning phi"     = c(MK_ARMA_100$coef["ar1"], MK_ARMA_200$coef["ar1"], MK_ARMA_1000$coef["ar1"]),
+  "ML-Skattning phi"     = c(ML_ARMA_100$coef["ar1"], ML_ARMA_200$coef["ar1"], ML_ARMA_1000$coef["ar1"]),
+  "MK-Skattning theta 1" = c(MK_ARMA_100$coef["ma1"], MK_ARMA_200$coef["ma1"], MK_ARMA_1000$coef["ma1"]),
+  "ML-Skattning theta 1" = c(ML_ARMA_100$coef["ma1"], ML_ARMA_200$coef["ma1"], ML_ARMA_1000$coef["ma1"]),
+  "MK-Skattning theta 2" = c(MK_ARMA_100$coef["ma2"], MK_ARMA_200$coef["ma2"], MK_ARMA_1000$coef["ma2"]),
+  "ML-Skattning theta 2" = c(ML_ARMA_100$coef["ma2"], ML_ARMA_200$coef["ma2"], ML_ARMA_1000$coef["ma2"]),
+  check.names = FALSE
+)
+
+MK_ARMA11_100  <- arima(ARMA_100,  order = c(1,0,1), method = "CSS")
+ML_ARMA11_100  <- arima(ARMA_100,  order = c(1,0,1), method = "ML")
+
+MK_ARMA11_200  <- arima(ARMA_200,  order = c(1,0,1), method = "CSS")
+ML_ARMA11_200  <- arima(ARMA_200,  order = c(1,0,1), method = "ML")
+
+MK_ARMA11_1000 <- arima(ARMA_1000, order = c(1,0,1), method = "CSS")
+ML_ARMA11_1000 <- arima(ARMA_1000, order = c(1,0,1), method = "ML")
+
+data.frame(
+  "Längd" = c(n, "Sant värde"),
+  "MK-Skattning phi"   = c(MK_ARMA11_100$coef["ar1"], MK_ARMA11_200$coef["ar1"], MK_ARMA11_1000$coef["ar1"], 0.6),
+  "ML-Skattning phi"   = c(ML_ARMA11_100$coef["ar1"], ML_ARMA11_200$coef["ar1"], ML_ARMA11_1000$coef["ar1"], 0.6),
+  "MK-Skattning theta" = c(MK_ARMA11_100$coef["ma1"], MK_ARMA11_200$coef["ma1"], MK_ARMA11_1000$coef["ma1"], 0.4),
+  "ML-Skattning theta" = c(ML_ARMA11_100$coef["ma1"], ML_ARMA11_200$coef["ma1"], ML_ARMA11_1000$coef["ma1"], 0.4),
+  check.names = FALSE
+)
