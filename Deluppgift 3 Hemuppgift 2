@@ -1,0 +1,68 @@
+# 3 Modellval
+
+
+```{r}
+
+data(co2)
+
+plot(co2, ylab = "CO2", xlab = "Tid")
+points(co2, pch = substr(month.abb, 1, 1)[cycle(co2)], cex = 0.7, col = "darkseagreen4")
+```
+
+Här är tidsserien för Co2-datasetet plottat med månader utmärkta. Här syns ett tydligt säsongsmönster samt en trend i datan,  vilket leder oss till att avtrendifiera tidsserien nedan. Vi skapar först en ny variabel "månad" som tar in månadsvariationen i datan, för att sedan använda denna i en linjär trendmodell (µ(t)).
+
+## Avtrendifiering
+
+```{r}
+månad = season(co2) # skapar en månadsfaktor
+# µ(t):
+µ_t = lm(co2 ~ time(co2) + månad) # fångar den linjära trenden i datan + månadernas inverkan
+summary(µ_t)
+plot(µ_t)
+```
+Trendmodellens residualer i figurerna ovan ser ut att uppvisa konstant varians samt vara normalfördelade
+
+
+Residualerna från vår modell "µ_t" sparas i en ny variabel "X". Vi skapar en tidsserie med residualerna:
+```{r}
+
+# X = observerat - skattat:
+X = ts(residuals(µ_t), start = start(co2), frequency = 12)
+
+plot(X, type = "o", ylab = "X(t)", xlab = "Tid"); abline(h=0, lty=2)
+
+```
+
+Tidsserien av residualerna är nu avtrendifierad utan tydliga säsongsmönster som framgår av figuren ovan. 
+
+## Identifiera p och q: Modellspecifikation
+
+```{r}
+acf(as.numeric(X), lag.max = 36, main="X(t)", xlab = "Lag (månader)")
+pacf(as.numeric(X), lag.max = 36, main="X(t)", xlab = "Lag (månader)")
+eacf(X)
+
+
+```
+
+Eftersom ACF:en är avtagande och vi ser en cut-off efter 1 månads lag i PACF:en antar vi AR(1) som en tänkbar lämplig modellkandidat.
+
+Vi hittar också ett (o)-hörn i EACF:en som pekar mot att ARMA(1, 1) skulle kunna vara en lämplig modell också.
+
+```{r}
+
+modell_AR_1 = arima(X, order=c(1, 0, 0), method="ML")
+modell_AR_1
+confint(modell_AR_1)
+rstandard(modell_AR_1)
+
+modell_ARMA_1_1 = arima(X, order=c(1, 0, 1), method="ML")
+modell_ARMA_1_1
+confint(modell_ARMA_1_1)
+
+
+```
+
+
+
+
