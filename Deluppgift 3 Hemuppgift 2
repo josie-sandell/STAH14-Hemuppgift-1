@@ -54,15 +54,83 @@ Vi hittar också ett (o)-hörn i EACF:en som pekar mot att ARMA(1, 1) skulle kun
 modell_AR_1 = arima(X, order=c(1, 0, 0), method="ML")
 modell_AR_1
 confint(modell_AR_1)
-rstandard(modell_AR_1)
 
 modell_ARMA_1_1 = arima(X, order=c(1, 0, 1), method="ML")
 modell_ARMA_1_1
 confint(modell_ARMA_1_1)
 
-
 ```
 
+Den skattade AR(1)-modellen har ett phi i intervallet ~[0.36, 0.65] med 5% signifikans. Eftersom intercept-intervallet går över 0 kan vi inte utelsuta att interceptet är just 0.
+
+Den skattade ARMA(1, 1)-modellen har phi i intervallet ~[0.66, 0.97] och theta i intervallet ~[-0.69, -0.20]. Intercepetet går över 0, så vi kan inte utelsuta att interceptet är = 0. 
+
+## Residualanalys hos modellerna
+
+### AR(1)
+```{r}
+residualer_AR_1 = rstandard(modell_AR_1)
+
+## Väntevärde och varians
+mean(residualer_AR_1)
+var(residualer_AR_1)
+t.test(residualer_AR_1, mu=0) # H0: väntevärde = 0
+plot(residualer_AR_1, main="AR(1) Residualplot", ylab="Standardiserade residualer", type = 'o'); abline(h=0)
+```
+
+Väntevärdet är väldigt nära 0 vilket förutom av mean-funktionen också styrks av t-testet. Att variansen är nära 1 leder oss att tro att residualerna är N(0,1)-fördelade, vilket vi får se i nästa kod-chunk.
+
+```{r}
+## Fördelning
+qqnorm(residualer_AR_1)
+qqline(residualer_AR_1)
+hist(residualer_AR_1, xlab="Standardiserade residualer")
+shapiro.test(residualer_AR_1)
+```
+
+residualerna följer linjen i Normal Q-Q-plotten och i hisotgrammet ser de också normalfördelade ut. Shapiro-Wilk-teststatistikan, W, är nästan lika med 1. Vi konstaterar att residualerna är normalfördelade.
+
+```{r}
+## Autokorrelation
+
+acf(as.numeric(residualer_AR_1), lag=36)
+runs(residualer_AR_1)
+LB.test(modell_AR_1, lag=12)
+LB.test(modell_AR_1, lag=24)
+
+tsdiag(modell_AR_1, gof=15, omit.initial=F)
+
+```
+Att de allra flesta staplarna befinner sig inom linjerna i ACF-plotten tyder på att det inte finns något kvarvarande beroende mellan residualerna. Runs-testet gav 67 förväntade mot 67 observerade runs (p=0.93): så vi kan inte avfärda oberoende mellan residualerna. AR(1) modellen klarar lag 12, men inte lag 24 i Ljung-Box-testet, vilket får oss att vilja undersöka ARMA(1, 1)-modellen. 
 
 
+### ARMA(1, 1)
+
+```{r}
+residualer_ARMA_1_1 = rstandard(modell_ARMA_1_1)
+
+## Väntevärde och varians
+mean(residualer_ARMA_1_1)
+var(residualer_ARMA_1_1)
+t.test(residualer_ARMA_1_1, mu=0) # H0: väntevärde = 0
+plot(residualer_ARMA_1_1, main="AR(1) Residualplot", ylab="Standardiserade residualer", type = 'o'); abline(h=0)
+
+## Fördelning
+qqnorm(residualer_ARMA_1_1)
+qqline(residualer_ARMA_1_1)
+hist(residualer_ARMA_1_1, xlab="Standardiserade residualer")
+shapiro.test(residualer_ARMA_1_1)
+
+
+## Autokorrelation
+
+acf(as.numeric(residualer_ARMA_1_1), lag.max=36)
+runs(residualer_ARMA_1_1)
+LB.test(modell_ARMA_1_1, lag=12)
+LB.test(modell_ARMA_1_1, lag=24)
+
+tsdiag(modell_ARMA_1_1, gof=15, omit.initial=F)
+
+
+```
 
