@@ -1,0 +1,618 @@
+---
+title: "Hemuppgift 2"
+author: "Josefine Sandell och Mikael Trulsson"
+date: "`r Sys.Date()`"
+output: word_document
+toc: TRUE
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(TSA)
+```
+
+# 2 ML- och MK-skattning av ARMA(p,q)-processer
+
+```{r }
+# AR(1)
+
+phi <- 0.6
+
+theta <- -0.6
+
+theta2 <- 0.4
+
+set.seed(1)
+AR_100 <- arima.sim(model=list(ar=phi), n = 100)
+
+set.seed(2)
+AR_200 <- arima.sim(model=list(ar=phi), n = 200)
+
+set.seed(3)
+AR_1000 <- arima.sim(model=list(ar=phi), n = 1000)
+
+set.seed(4)
+MA_100<- arima.sim(model=list(ma=theta), n = 100)
+
+set.seed(5)
+MA_200<- arima.sim(model=list(ma=theta), n = 200)
+
+set.seed(6)
+MA_1000<- arima.sim(model=list(ma=theta), n = 1000)
+
+set.seed(7)
+ARMA_100 <- arima.sim(model=list(ar = phi, ma = theta2), n = 100)
+
+set.seed(8)
+ARMA_200 <- arima.sim(model=list(ar = phi, ma = theta2), n = 200)
+
+set.seed(9)
+ARMA_1000 <- arima.sim(model=list(ar = phi, ma = theta2), n = 1000)
+```
+
+Vi valde ett phi-värde på 0.6 för våra AR(1) modeller, samt ett värde på theta på 0.6 för vår MA(1) modell (enligt bokens notation). Vår ARMA(1,1) modell hade ett phi-värde på 0.6 och theta-värde på -0.4. 
+
+## AR(1) Modellordning
+```{r AR}
+
+
+plot(pacf(AR_100, plot = FALSE), xlab = "Lag", ylab = "Skattade PACF", main = "Skattade PACF för AR(1) med phi = 0.6, n = 100")
+
+plot(pacf(AR_200, plot = FALSE), xlab = "Lag", ylab = "Skattade PACF", main = "Skattade PACF för AR(1) med phi = 0.6, n = 200")
+
+plot(pacf(AR_1000, plot = FALSE), xlab = "Lag", ylab = "Skattade PACF", main = "Skattade PACF för AR(1) med phi = 0.6, n = 1000")
+```
+
+Vi gör en visuell bedömning av de skattade ACF:erna och PACF:erna för AR(1)-processens tidsserier. ACF:erna (visas ej) avtar exponentiellt, vilket tyder på en AR-process. PACF:erna har ett tydligt cutoff efter lagg 1, så vi skattar modellordningen till p = 1 för alla tre tidsserierna. Vi ser också att konfidensbanden blir smalare när n ökar, och att de skattade partiella autokorrelationerna för lagg större än 1 ligger närmare noll.
+
+Vi skattar nu en modellordning på AR(1) för alla tidsserier.
+
+## MA(1) modellordning
+
+```{r MA}
+
+
+plot(acf(MA_100, plot = FALSE), xlab = "Lag", ylab = "Skattade ACF", main = "Skattade ACF för MA(1) med theta = 0.6, n = 100") # enligt bokens konventioner om  tecknet före theta: -theta blir theta 
+
+plot(acf(MA_200, plot = FALSE), xlab = "Lag", ylab = "Skattade ACF", main = "Skattade ACF för MA(1) med theta = 0.6, n = 200")
+
+plot(acf(MA_1000, plot = FALSE), xlab = "Lag", ylab = "Skattade ACF", main = "Skattade ACF för MA(1) med theta = -0.6, n = 1000")
+```
+
+De skattade PACF:erna (visas ej) avtar exponentiellt, vilket stämmer med en MA-process. I en teoretisk MA(1)-modell är autokorrelationen noll för alla lagg större än 1. I vår simulering ligger några lagg utanför konfidensbanden, men det beror troligen på slumpen, eftersom ungefär 5 % av lagen förväntas hamna utanför ett 95-procentigt band. 
+
+Cutoffen efter lagg 1 är tydlig, så vi skattar modellordningen till MA(1) för alla tidsserier. Ju längre tidsserien är, desto närmare den teoretiska ACF:en ligger den skattade ACF:en.
+
+# ARMA(1,1) modellordning
+
+```{r ARMA}
+
+eacf(ARMA_100)
+
+eacf(ARMA_200)
+
+eacf(ARMA_1000)
+
+```
+
+Den skattade EACF:en tolkas genom att hitta triangeln av nollor och läsa av kandidatmodeller (p,q) vid triangelns övre vänstra hörn. 
+
+För n = 100 föreslås ARMA(0,2), ARMA(0,3) och ARMA(1,2). Vi vet förstås att ARMA(1,1) är den korrekta modellen, men den pekas inte ut som kandidat. Efter att även ha studerat ACF:en och PACF:en (visas ej) väljer vi ARMA(0,2). 
+
+För n = 200 får vi samma kandidater och väljer återigen ARMA(0,2). För n = 1000 är kandidaterna ARMA(1,1), ARMA(2,1) och ARMA(1,2), och vi väljer ARMA(1,1).
+
+
+```{r AR parameterskattning}
+
+n <- c(100, 200, 1000)
+
+
+MK_AR_100 <- arima(AR_100, order = c(1,0,0), method = "CSS")
+
+ML_AR_100 <- arima(AR_100, order = c(1,0,0), method = "ML")
+
+MK_AR_200 <- arima(AR_200, order = c(1,0,0), method = "CSS")
+
+ML_AR_200 <- arima(AR_200, order = c(1,0,0), method = "ML")
+
+MK_AR_1000 <- arima(AR_1000, order = c(1,0,0), method = "CSS")
+
+ML_AR_1000 <- arima(AR_1000, order = c(1,0,0), method = "ML")
+
+
+tabell_AR_lång <- data.frame(
+  "Längd"  = c(100, 100, 200, 200, 1000, 1000),
+  "Metod"  = c("MK", "ML", "MK", "ML", "MK", "ML"),
+  "phi"    = c(MK_AR_100$coef["ar1"], ML_AR_100$coef["ar1"],
+               MK_AR_200$coef["ar1"], ML_AR_200$coef["ar1"],
+               MK_AR_1000$coef["ar1"], ML_AR_1000$coef["ar1"]),
+  "Nedre"  = c(confint(MK_AR_100)["ar1", 1], confint(ML_AR_100)["ar1", 1],
+               confint(MK_AR_200)["ar1", 1], confint(ML_AR_200)["ar1", 1],
+               confint(MK_AR_1000)["ar1", 1], confint(ML_AR_1000)["ar1", 1]),
+  "Övre"   = c(confint(MK_AR_100)["ar1", 2], confint(ML_AR_100)["ar1", 2],
+               confint(MK_AR_200)["ar1", 2], confint(ML_AR_200)["ar1", 2],
+               confint(MK_AR_1000)["ar1", 2], confint(ML_AR_1000)["ar1", 2]),
+  "Sant värde" = 0.6,
+  check.names = FALSE
+)
+
+tabell_AR_lång[, 3:6] <- round(tabell_AR_lång[, 3:6], 3)
+tabell_AR_lång
+
+```
+Tabellen ovan visar parametersskattningarna för AR(1)-processen. När processens längd ökar så minskar den skattade konfidensintervallet från både ML- och MK-skattaren. Skattningen som kom närmast det sanna värdet var ML-skattningen för processen med längd n = 100, där $\hat{\phi} = 0.592$. Det är dock noterbart att standardfelet var hög för denna skattning på 0.0828. Därför tycker vi att de bästa skattningarna var istället ML- och MK- skattningarna för processen med n = 1000, som både hade en lägre standardfel på 0.0256 och skattade $\hat{\phi} = 0.59$.
+
+Allmänt gav större n högre precision än mindre n, och ML-skattaren gav lite bättre precision än MK-skattaren.
+
+Vi skattar nu parametrarna för MA(1)-processen.
+
+```{r MA parameterskattning}
+
+
+MK_MA_100 <- arima(MA_100, order = c(0,0,1), method = "CSS")
+
+ML_MA_100 <- arima(MA_100, order = c(0,0,1), method = "ML")
+
+MK_MA_200 <- arima(MA_200, order = c(0,0,1), method = "CSS")
+
+ML_MA_200 <- arima(MA_200, order = c(0,0,1), method = "ML")
+
+MK_MA_1000 <- arima(MA_1000, order = c(0,0,1), method = "CSS")
+
+ML_MA_1000 <- arima(MA_1000, order = c(0,0,1), method = "ML")
+
+tabell_MA_confint <- data.frame(
+  "Längd"  = c(100, 100, 200, 200, 1000, 1000),
+  "Metod"  = c("MK", "ML", "MK", "ML", "MK", "ML"),
+  "theta"    = c(MK_MA_100$coef["ma1"], ML_MA_100$coef["ma1"],
+               MK_MA_200$coef["ma1"], ML_MA_200$coef["ma1"],
+               MK_MA_1000$coef["ma1"], ML_MA_1000$coef["ma1"]),
+  "Nedre"  = c(confint(MK_MA_100)["ma1", 1], confint(ML_MA_100)["ma1", 1],
+               confint(MK_MA_200)["ma1", 1], confint(ML_MA_200)["ma1", 1],
+               confint(MK_MA_1000)["ma1", 1], confint(ML_MA_1000)["ma1", 1]),
+  "Övre"   = c(confint(MK_MA_100)["ma1", 2], confint(ML_MA_100)["ma1", 2],
+               confint(MK_MA_200)["ma1", 2], confint(ML_MA_200)["ma1", 2],
+               confint(MK_MA_1000)["ma1", 2], confint(ML_MA_1000)["ma1", 2]),
+  "Sant värde" = -0.6,
+  check.names = FALSE
+)
+tabell_MA_confint[, 3:6] <- round(tabell_MA_confint[, 3:6], 3)
+tabell_MA_confint
+
+MK_MA_1000
+
+```
+Parameterskattningarna för vår MA(1)-process pekade också på att större n ger bättre precision i skattningarna. 
+
+De bästa skattningarna var MK- och ML-skattningarna, som gav $\hat{\theta} = -0.64$ båda två. De hade också samma standardfel, 0.0247, vilket gav samma konfidensintervall för skattningarna.
+
+Vi undersöker nu ARMA(1,1)-processen och skattar dess parametrar. Vi börjar med att (medvetet) skatta en ARMA(0,2)-process, alltså en MA(2)-process, eftersom vi tidigare valde fel modellordning utifrån EACF:en. Därefter skattar vi parametrarna i den sanna modellen och jämför skattningarna i tabellen nedan. 
+
+```{r}
+
+# skattning för ARMA (1,1) parametrar när ordningen skattas fel
+
+MK_ARMA_100 <- arima(ARMA_100, order = c(0,0,2), method = "CSS")
+
+ML_ARMA_100 <- arima(ARMA_100, order = c(0,0,2), method = "ML")
+
+MK_ARMA_200 <- arima(ARMA_200, order = c(0,0,2), method = "CSS")
+
+ML_ARMA_200 <- arima(ARMA_200, order = c(0,0,2), method = "ML")
+
+MK_ARMA_1000 <- arima(ARMA_1000, order = c(0,0,2), method = "CSS")
+
+ML_ARMA_1000 <- arima(ARMA_1000, order = c(0,0,2), method = "ML")
+
+
+```
+
+
+
+```{r}
+
+# skatta arma (1,1) parametrar med rätt ordning
+
+
+MK_ARMA11_100  <- arima(ARMA_100,  order = c(1,0,1), method = "CSS")
+ML_ARMA11_100  <- arima(ARMA_100,  order = c(1,0,1), method = "ML")
+
+MK_ARMA11_200  <- arima(ARMA_200,  order = c(1,0,1), method = "CSS")
+ML_ARMA11_200  <- arima(ARMA_200,  order = c(1,0,1), method = "ML")
+
+MK_ARMA11_1000 <- arima(ARMA_1000, order = c(1,0,1), method = "CSS")
+ML_ARMA11_1000 <- arima(ARMA_1000, order = c(1,0,1), method = "ML")
+
+tabell_jämförelse <- data.frame(
+  "Längd" = c(100, 100, 100, 100, 200, 200, 200, 200, 1000, 1000, 1000, 1000, "Sant värde"),
+  "Modell" = c(rep(c("ARMA(0,2)", "ARMA(0,2)", "ARMA(1,1)", "ARMA(1,1)"), 3), "ARMA(1,1)"),
+  "Metod" = c(rep(c("MK", "ML", "MK", "ML"), 3), ""),
+
+  "phi" = c(MK_ARMA_100$coef["ar1"],   ML_ARMA_100$coef["ar1"],
+            MK_ARMA11_100$coef["ar1"], ML_ARMA11_100$coef["ar1"],
+            MK_ARMA_200$coef["ar1"],   ML_ARMA_200$coef["ar1"],
+            MK_ARMA11_200$coef["ar1"], ML_ARMA11_200$coef["ar1"],
+            MK_ARMA_1000$coef["ar1"],  ML_ARMA_1000$coef["ar1"],
+            MK_ARMA11_1000$coef["ar1"], ML_ARMA11_1000$coef["ar1"],
+            0.6),
+
+  "theta 1" = c(MK_ARMA_100$coef["ma1"],   ML_ARMA_100$coef["ma1"],
+                MK_ARMA11_100$coef["ma1"], ML_ARMA11_100$coef["ma1"],
+                MK_ARMA_200$coef["ma1"],   ML_ARMA_200$coef["ma1"],
+                MK_ARMA11_200$coef["ma1"], ML_ARMA11_200$coef["ma1"],
+                MK_ARMA_1000$coef["ma1"],  ML_ARMA_1000$coef["ma1"],
+                MK_ARMA11_1000$coef["ma1"], ML_ARMA11_1000$coef["ma1"],
+                0.4),
+
+  "theta 2" = c(MK_ARMA_100$coef["ma2"],   ML_ARMA_100$coef["ma2"],
+                MK_ARMA11_100$coef["ma2"], ML_ARMA11_100$coef["ma2"],
+                MK_ARMA_200$coef["ma2"],   ML_ARMA_200$coef["ma2"],
+                MK_ARMA11_200$coef["ma2"], ML_ARMA11_200$coef["ma2"],
+                MK_ARMA_1000$coef["ma2"],  ML_ARMA_1000$coef["ma2"],
+                MK_ARMA11_1000$coef["ma2"], ML_ARMA11_1000$coef["ma2"],
+                NA),
+
+  check.names = FALSE,
+  row.names = NULL
+)
+
+tabell_jämförelse[, 4:6] <- round(tabell_jämförelse[, 4:6], 3)
+tabell_jämförelse
+
+
+```
+Tabellen ovan jämför parameterskattningarna när modellordningen skattas som ARMA(0,2) respektive ARMA(1,1).
+
+Det som är noterbart i denna tabell är att parameterskattningarna hamnar långt ifrån de sanna värdena när modellordningen skattas fel.
+
+Vi ser också att processens längd har en ännu större påverkan på skattningen jämfört med de enklare AR(1) och MA(1)-processerna. 
+
+ML-skattningen för processen med n = 1000 gav bäst skattning med $\hat{\phi} = 0.57$ och  $\hat{\theta} = 0.40$.
+
+Eftersom vi har redan undersökt hur tidsseriens längd kan påverka skattningarna väljer vi att endast bilda konfidensintervall för tidsserien med längd n = 1000. Detta gör det enklare att jämföra MK- och ML-skattningarna.
+
+```{r}
+
+# konfidensintervall för arma(1,1) parameterskattningar, n = 1000
+data.frame(
+  "Metod" = c("MK", "ML", "Sant värde"),
+
+  "phi"       = c(MK_ARMA11_1000$coef["ar1"], ML_ARMA11_1000$coef["ar1"], 0.6),
+  "phi nedre" = c(confint(MK_ARMA11_1000)["ar1", 1], confint(ML_ARMA11_1000)["ar1", 1], NA),
+  "phi övre"  = c(confint(MK_ARMA11_1000)["ar1", 2], confint(ML_ARMA11_1000)["ar1", 2], NA),
+
+  "theta"       = c(MK_ARMA11_1000$coef["ma1"], ML_ARMA11_1000$coef["ma1"], 0.4),
+  "theta nedre" = c(confint(MK_ARMA11_1000)["ma1", 1], confint(ML_ARMA11_1000)["ma1", 1], NA),
+  "theta övre"  = c(confint(MK_ARMA11_1000)["ma1", 2], confint(ML_ARMA11_1000)["ma1", 2], NA),
+
+  check.names = FALSE
+)
+
+```
+
+
+Tabellen ovan visar ingen större skillnad mellan MK- och ML-skattarens precision. Konfidensintervallen är ungefär lika bredda. 
+
+
+```{r ARMA(2,2)}
+
+set.seed(9999)
+
+theta_2 <- -c(0.4, 0.2)
+phi_2 <- c(1.2, -0.3)   # stationär, inverterade rötter 0.845 och 0.355
+
+ARMA22 <- arima.sim(model = list(ar = phi_2, ma = theta_2), n = 1000)
+
+plot(acf(ARMA22, plot = FALSE), xlab = "Lag", ylab = "Skattade ACF",
+     main = "Skattade ACF för ARMA(2,2), phi = (1.2, -0.3), theta (R) = (-0.4, -0.2), n = 1000")
+
+plot(pacf(ARMA22, plot = FALSE), xlab = "Lag", ylab = "Skattade PACF",
+     main = "Skattade PACF för ARMA(2,2), phi = (1.2, -0.3), theta (R) = (-0.4, -0.2), n = 1000")
+
+eacf(ARMA22)
+
+```
+
+EACF:en pekar mot en ARMA(1,2)-modell men visar att ARMA(2,2) kan också vara en lämplig kandidat. Vi skattar koefficienterna för båda modellerna för att jämföra dem.
+
+
+```{r parameterskattning}
+
+MK_ARMA12 <- arima(ARMA22, order = c(1,0,2), method = "CSS")
+ML_ARMA12 <- arima(ARMA22, order = c(1,0,2), method = "ML")
+
+data.frame(
+  "MK-Skattning phi"     = MK_ARMA12$coef["ar1"],
+  "ML-Skattning phi"     = ML_ARMA12$coef["ar1"],
+  "MK-Skattning theta 1" = MK_ARMA12$coef["ma1"],
+  "ML-Skattning theta 1" = ML_ARMA12$coef["ma1"],
+  "MK-Skattning theta 2" = MK_ARMA12$coef["ma2"],
+  "ML-Skattning theta 2" = ML_ARMA12$coef["ma2"],
+  check.names = FALSE
+)
+
+```
+
+Tabellen ovan visar koefficientskattningarna för den felidentifierade ARMA(1,2)-processen. Eftersom vi egentligen vet att modellordningen är fel så visar vi inte alla konfidensintervallen. Det är värt att nämna hur mycket mindre skattningarna av theta-värdena blir jämfört med de sanna värden.
+
+
+```{r}
+
+# Skattning av ARMA(2,2) (sann ordning), med konfidensintervall
+
+MK_ARMA22 <- arima(ARMA22, order = c(2,0,2), method = "CSS")
+ML_ARMA22 <- arima(ARMA22, order = c(2,0,2), method = "ML")
+
+tabell_ARMA22 <- data.frame(
+  "Metod" = c("MK", "ML", "Sant värde"),
+
+  "phi 1"       = c(MK_ARMA22$coef["ar1"], ML_ARMA22$coef["ar1"], 1.2),
+  "phi 1 nedre" = c(confint(MK_ARMA22)["ar1", 1], confint(ML_ARMA22)["ar1", 1], NA),
+  "phi 1 övre"  = c(confint(MK_ARMA22)["ar1", 2], confint(ML_ARMA22)["ar1", 2], NA),
+
+  "phi 2"       = c(MK_ARMA22$coef["ar2"], ML_ARMA22$coef["ar2"], -0.3),
+  "phi 2 nedre" = c(confint(MK_ARMA22)["ar2", 1], confint(ML_ARMA22)["ar2", 1], NA),
+  "phi 2 övre"  = c(confint(MK_ARMA22)["ar2", 2], confint(ML_ARMA22)["ar2", 2], NA),
+
+  "theta 1"       = c(MK_ARMA22$coef["ma1"], ML_ARMA22$coef["ma1"], -0.4),
+  "theta 1 nedre" = c(confint(MK_ARMA22)["ma1", 1], confint(ML_ARMA22)["ma1", 1], NA),
+  "theta 1 övre"  = c(confint(MK_ARMA22)["ma1", 2], confint(ML_ARMA22)["ma1", 2], NA),
+
+  "theta 2"       = c(MK_ARMA22$coef["ma2"], ML_ARMA22$coef["ma2"], -0.2),
+  "theta 2 nedre" = c(confint(MK_ARMA22)["ma2", 1], confint(ML_ARMA22)["ma2", 1], NA),
+  "theta 2 övre"  = c(confint(MK_ARMA22)["ma2", 2], confint(ML_ARMA22)["ma2", 2], NA),
+
+  check.names = FALSE
+)
+tabell_ARMA22[, 2:13] <- round(tabell_ARMA22[, 2:13], 3)
+tabell_ARMA22
+
+
+```
+
+Tabellen ovan visar alla koefficientskattningarna samt dess konfidensintervall för ARMA(2,2)-processen. Vi kan inte direkt jämföra skattningarna från denna process från processen innan då de har olika modellordningar. Vi kan dock konstatera att dessa skattningarna är närmare de sanna värdena. 
+
+I denna simulering så gav ML-skattaren lägre standardfel än MK-skattaren, alltså att precisionen av skattningarna var högre. MK-skattaren kom däremot närmare de sanna värdena. 
+
+## Del 2 sammanfattning
+
+Sammanfattningsvis så gav ML- och MK-skattning inga större skillnader i precision i våra simuleringar, med undantag för ARMA(2,2)-simuleringen där ML-skattning gav bättre precision. En tydlig trend som uppstod var att en större längd, n, på tidsserien gav bättre precision i skattningarna för båda MK- och ML-skattning, och för alla typer av processer. När modellordningen skattas fel så blir parameterskattningarna ojämförbara.
+
+
+# 3 Modellval
+
+
+```{r}
+
+data(co2)
+
+plot(co2, ylab = "CO2", xlab = "Tid")
+points(co2, pch = substr(month.abb, 1, 1)[cycle(co2)], cex = 0.7, col = "darkseagreen4")
+```
+
+Här är tidsserien för Co2-datasetet plottat med månader utmärkta. Här syns ett tydligt säsongsmönster samt en trend i datan,  vilket leder oss till att avtrendifiera tidsserien nedan. Vi skapar först en ny variabel "månad" som tar in månadsvariationen i datan, för att sedan använda denna i en linjär trendmodell (µ(t)).
+
+## Avtrendifiering
+
+```{r}
+månad = season(co2) # skapar en månadsfaktor
+# µ(t):
+µ_t = lm(co2 ~ time(co2) + månad) # fångar den linjära trenden i datan + månadernas inverkan
+summary(µ_t)
+plot(µ_t)
+```
+Trendmodellens residualer i figurerna ovan ser ut att uppvisa konstant varians samt vara normalfördelade
+
+
+Residualerna från vår modell "µ_t" sparas i en ny variabel "X". Vi skapar en tidsserie med residualerna:
+```{r}
+
+# X = observerat - skattat:
+X = ts(residuals(µ_t), start = start(co2), frequency = 12)
+
+plot(X, type = "o", ylab = "X(t)", xlab = "Tid"); abline(h=0, lty=2)
+
+```
+
+Tidsserien av residualerna är nu avtrendifierad utan tydliga säsongsmönster som framgår av figuren ovan. 
+
+## Identifiera p och q: Modellspecifikation
+
+```{r}
+acf(as.numeric(X), lag.max = 36, main="X(t)", xlab = "Lag (månader)")
+pacf(as.numeric(X), lag.max = 36, main="X(t)", xlab = "Lag (månader)")
+eacf(X)
+
+
+```
+
+Eftersom ACF:en är avtagande och vi ser en cut-off efter 1 månads lag i PACF:en antar vi AR(1) som en tänkbar lämplig modellkandidat.
+
+Vi hittar också ett (o)-hörn i EACF:en som pekar mot att ARMA(1, 1) skulle kunna vara en lämplig modell också.
+
+```{r}
+
+modell_AR_1 = arima(X, order=c(1, 0, 0), method="ML")
+modell_AR_1
+confint(modell_AR_1)
+
+modell_ARMA_1_1 = arima(X, order=c(1, 0, 1), method="ML")
+modell_ARMA_1_1
+confint(modell_ARMA_1_1)
+
+```
+
+Den skattade AR(1)-modellen har ett phi i intervallet ~[0.36, 0.65] med 5% signifikans. Eftersom intercept-intervallet går över 0 kan vi inte utelsuta att interceptet är just 0.
+
+Den skattade ARMA(1, 1)-modellen har phi i intervallet ~[0.66, 0.97] och theta i intervallet ~[-0.69, -0.20]. Intercepetet går över 0, så vi kan inte utelsuta att interceptet är = 0. 
+
+## Residualanalys hos modellerna
+
+### AR(1)
+```{r}
+residualer_AR_1 = rstandard(modell_AR_1)
+
+## Väntevärde och varians
+mean(residualer_AR_1)
+var(residualer_AR_1)
+t.test(residualer_AR_1, mu=0) # H0: väntevärde = 0
+plot(residualer_AR_1, main="AR(1) Residualplot", ylab="Standardiserade residualer", type = 'o'); abline(h=0)
+```
+
+Väntevärdet är väldigt nära 0 vilket förutom av mean-funktionen också styrks av t-testet. Att variansen är nära 1 leder oss att tro att residualerna är N(0,1)-fördelade, vilket vi får se i nästa kod-chunk.
+
+```{r}
+## Fördelning
+qqnorm(residualer_AR_1)
+qqline(residualer_AR_1)
+hist(residualer_AR_1, xlab="Standardiserade residualer")
+shapiro.test(residualer_AR_1)
+```
+
+Residualerna följer linjen i Normal Q-Q-plotten och i hisotgrammet ser de också normalfördelade ut. Shapiro-Wilk-teststatistikan, W, är nästan lika med 1. Vi konstaterar att residualerna är normalfördelade.
+
+```{r}
+## Autokorrelation
+
+acf(as.numeric(residualer_AR_1), lag=36)
+runs(residualer_AR_1)
+LB.test(modell_AR_1, lag=12)
+LB.test(modell_AR_1, lag=24)
+
+tsdiag(modell_AR_1, gof=15, omit.initial=F)
+
+```
+Att de allra flesta staplarna befinner sig inom linjerna i ACF-plotten tyder på att det inte finns något kvarvarande beroende mellan residualerna. Runs-testet gav 67 förväntade mot 67 observerade runs (p=0.93): så vi kan inte avfärda oberoende mellan residualerna. AR(1) modellen klarar lag 12, men inte lag 24 i Ljung-Box-testet, vilket får oss att vilja undersöka ARMA(1, 1)-modellen. 
+
+
+### ARMA(1, 1)
+
+```{r}
+residualer_ARMA_1_1 = rstandard(modell_ARMA_1_1)
+
+## Väntevärde och varians
+mean(residualer_ARMA_1_1)
+var(residualer_ARMA_1_1)
+t.test(residualer_ARMA_1_1, mu=0) # H0: väntevärde = 0
+plot(residualer_ARMA_1_1, main="AR(1) Residualplot", ylab="Standardiserade residualer", type = 'o'); abline(h=0)
+
+## Fördelning
+qqnorm(residualer_ARMA_1_1)
+qqline(residualer_ARMA_1_1)
+hist(residualer_ARMA_1_1, xlab="Standardiserade residualer")
+shapiro.test(residualer_ARMA_1_1)
+
+
+## Autokorrelation
+
+acf(as.numeric(residualer_ARMA_1_1), lag.max=36)
+runs(residualer_ARMA_1_1)
+LB.test(modell_ARMA_1_1, lag=12)
+LB.test(modell_ARMA_1_1, lag=24)
+
+tsdiag(modell_ARMA_1_1, gof=15, omit.initial=F)
+
+
+```
+
+
+
+
+## Regn i Los Angeles
+
+```{r modellval}
+
+library(TSA)
+
+data(larain)
+
+plot(larain, ylab = "Regn i Los Angeles", xlab = "Tid")
+
+```
+
+Vi undersöker datasetet “larain” och bedömer att processen verkar ha goda stationaritetsegenskaper. Medelvärdet verkar vara konstant, så vi gör ingen avtrendifiering.
+
+```{r}
+
+µ_t_larain <- lm(larain ~time(larain))
+
+summary(µ_t_larain)
+plot(µ_t_larain)
+
+```
+
+Vi anpassar en linjär modell till datan. Lutningskoefficienten är inte signifikant (p = 0.4625 > alpha = 0.05). Därför kan vi besluta att ingen avtrendifiering behövs, och vi kan skatta tidsseriens ACF och PACF direkt utan transformationer.
+
+## Modellspecifikation
+
+```{r}
+
+acf(as.numeric(larain), lag.max = 36, main = "X(t)", xlab = "Lag (år)")
+
+pacf(as.numeric(larain), lag.max = 36, main = "X(t)", xlab = "Lag (år)")
+
+eacf(larain)
+
+```
+Varken ACF eller PACF visar något tydligt “cutoff” som tyder på att processen är en MA- eller AR-process, och inga lags ligger utanför konfidensbanden. EACF-tabellen visar en tydlig triangel av nollor, där det övre vänstra hörnet pekar mot en ARMA(0,0)-modell som den lämpligaste kandidaten. En ARMA(0,0)-modell är inget annat än vitt brus, vilket stämmer överens med ACF- och PACF-plottarna. Därför väljer vi denna modell.
+
+Eftersom modellen inte har några AR- eller MA-koefficienter finns inga sådana parametrar att skatta. Vi skattar dock medelvärdet och variansen, och validerar modellen med hjälp av residualerna.
+
+```{r}
+
+ARMA_00_ML <- arima(larain, order = c(0,0,0), method = "ML")
+
+
+ARMA_00_MK <- arima(larain, order = c(0,0,0), method = "CSS")
+
+larain_tabell <- data.frame(
+  "Metod"   = c("ML", "MK"),
+  "µ"       = c(coef(ARMA_00_ML)[1], coef(ARMA_00_MK)[1]),
+  "µ nedre" = c(confint(ARMA_00_ML)[1], confint(ARMA_00_MK)[1]),
+  "µ övre"  = c(confint(ARMA_00_ML)[2], confint(ARMA_00_MK)[2]),
+  check.names = FALSE
+)
+larain_tabell[, 2:4] <- round(larain_tabell[, 2:4], 3)
+larain_tabell
+
+
+```
+
+Tidsseriens medelvärde skattades som 14.888 med både MK- och ML-skattning. Konfidensintervallet ges av [13.636, 16.141]
+
+## Residualanalys
+
+
+```{r}
+larain_resid <- residuals(ARMA_00_ML) 
+plot(larain_resid) # plotta residualerna
+
+```
+En plot av residualerna visar att variansen verkar konstant; de följer inget särskilt mönster eller trend.
+
+
+```{r}
+
+
+shapiro.test(larain_resid) # testa normalitet, H_0: datan är normalfördelade
+
+acf(larain_resid) # autokorrelation
+
+Box.test(larain_resid, lag = 10, type = "Ljung-Box")
+
+```
+Vi utför en Shapiro-test för att testa residualernas normalitet. P-värdet (p = 0.0001) är mindre än vårt alphavärde 0.05, vilket innebär att vi kan förkasta vår nollhypotes. Residualerna är inte normalfördelade. Regndata är ofta skev åt höger, så icke-normaliteten kan bero på det.
+
+Till sist plottar vi residualernas autokorrelation samt utför en Ljung-Box-test. I ACF:en ser vi inga lags som sticker ut utanför konfidensbanden. Vi kan inte heller se något mönster i ACF:en vilket är konsistent med vitt brus.
+
+För Ljung-Box-testet är våra hypoteser:
+
+H₀: residualerna är oberoende 
+H₁: minst en autokorrelation upp till lag m skiljer sig från noll.
+
+Då p-värdet 0.244 är större än vår signifikansnivå 0.05 kan vi inte förkasta nollhypotesen att residualerna är oberoende. 
+
+## LA Rain sammanfattning
+
+Vi skattade en ARMA(0,0)-process för larain-datasetet, vilket är bara vitt brus. Normalitetsantagandet för residualerna håller dock inte vilket gör att konfidensintervallet för µ är bara approximativt. 
