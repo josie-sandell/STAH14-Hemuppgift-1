@@ -605,22 +605,33 @@ Tidsseriens medelvärde skattades som 14.888 med både MK- och ML-skattning. Kon
 ```{r}
 larain_resid <- residuals(ARMA_00_ML) 
 plot(larain_resid) # plotta residualerna
+mean(larain_resid)
+var(larain_resid)
+
+
 
 ```
-En plot av residualerna visar att variansen verkar konstant; de följer inget särskilt mönster eller trend.
+En plot av residualerna visar att variansen verkar oberoende och samma för alla tidspunkter; de följer inget särskilt mönster eller trend. Residualernas medelvärde är nära 0, vilket tyder på att de predicerade värdena är unbiased. Variansen för residualerna är 47.34. 
 
 
 ```{r}
 
+qqplot(larain_resid, time(larain))
 
 shapiro.test(larain_resid) # testa normalitet, H_0: datan är normalfördelade
 
+```
+Vi skapar en Q-Q plot med residualerna och plottar dem mot tid för att undersöka om de är normalfördelade. Plotten tyder på att de kan vara normalfördelade, men också att en viss skevhet förekommer i datan. 
+
+Vi utför därför en Shapiro-test för att testa residualernas normalitet. P-värdet (p = 0.0001) är mindre än vårt alphavärde 0.05, vilket innebär att vi kan förkasta vår nollhypotes. Residualerna är inte normalfördelade. Regndata är ofta skev åt höger, så icke-normaliteten kan bero på det. Att normalitetsantagandet inte uppfylls påverkar nogrannheten av konfidensintervallet vi bildade. 
+
+
+```{r}
 acf(larain_resid) # autokorrelation
 
 Box.test(larain_resid, lag = 10, type = "Ljung-Box")
 
 ```
-Vi utför en Shapiro-test för att testa residualernas normalitet. P-värdet (p = 0.0001) är mindre än vårt alphavärde 0.05, vilket innebär att vi kan förkasta vår nollhypotes. Residualerna är inte normalfördelade. Regndata är ofta skev åt höger, så icke-normaliteten kan bero på det.
 
 Till sist plottar vi residualernas autokorrelation samt utför en Ljung-Box-test. I ACF:en ser vi inga lags som sticker ut utanför konfidensbanden. Vi kan inte heller se något mönster i ACF:en vilket är konsistent med vitt brus.
 
@@ -629,8 +640,9 @@ För Ljung-Box-testet är våra hypoteser:
 H₀: residualerna är oberoende 
 H₁: minst en autokorrelation upp till lag m skiljer sig från noll.
 
-Då p-värdet 0.244 är större än vår signifikansnivå 0.05 kan vi inte förkasta nollhypotesen att residualerna är oberoende. 
+Då p-värdet 0.244 är större än vår signifikansnivå 0.05 kan vi inte förkasta nollhypotesen att residualerna är oberoende. Detta är också konsistent med vitt brus.
+
 
 ### LA Rain sammanfattning
 
-Vi skattade en ARMA(0,0)-process för larain-datasetet, vilket är bara vitt brus. Normalitetsantagandet för residualerna håller dock inte vilket gör att konfidensintervallet för µ är bara approximativt. 
+Vi skattade en ARMA(0,0)-process för larain-datasetet, vilket är bara vitt brus. Normalitetsantagandet för residualerna håller dock inte vilket gör att konfidensintervallet för µ är bara approximativt. Eftersom residualerna beter sig som vitt brus annars och detta är en enkel model med oberoende residualer så väljer vi att behålla den här modellen. 
